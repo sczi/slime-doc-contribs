@@ -326,6 +326,12 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
     (goto-char 0)
     (pop-to-buffer buffer)))
 
+(defcustom slime-help-print-case
+  #'upcase
+  "Function to use on names before displaying, as in CL's *print-case*."
+  :type 'function
+  :group 'slime-help)
+
 (defcustom slime-help-package-format "This is a Common Lisp package with %d external symbols"
   "Format string to use when displaying information about a package."
   :type 'string
@@ -344,7 +350,7 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
     (let* ((package-info (slime-eval `(swank-help:read-emacs-package-info ,package-name)))
            (buffer (get-buffer-create buffer-name)))
       (with-current-buffer buffer
-        (insert (slime-help--heading-1 (upcase (string-trim package-name))))
+        (insert (slime-help--heading-1 (funcall slime-help-print-case (string-trim package-name))))
         (newline 2)
         (insert (format slime-help-package-format (length (cdr (assoc :external-symbols package-info)))))
         (newline 2)
@@ -832,7 +838,7 @@ ARGS contains additional arguments, like 'extra-buttons."
         (insert (slime-help--heading-2 "Direct superclasses"))
         (newline 2)
         (dolist (class-name (cdr (assoc :direct-superclasses symbol-info)))
-          (insert-button (upcase (symbol-name class-name))
+          (insert-button (funcall slime-help-print-case (symbol-name class-name))
                          'action (lambda (_btn)
                                    (slime-help-class (symbol-name class-name)))
                          'follow-link t
@@ -849,7 +855,7 @@ ARGS contains additional arguments, like 'extra-buttons."
             (insert (slime-help--heading-2 "Direct subclasses"))
             (newline 2)
             (dolist (class-name (cl-subseq subclasses 0 (min max-subclasses (length subclasses))))
-              (insert-button (upcase (symbol-name class-name))
+              (insert-button (funcall slime-help-print-case (symbol-name class-name))
                              'action (lambda (_btn)
                                        (slime-help-class (symbol-name class-name)))
                              'follow-link t
@@ -885,7 +891,7 @@ ARGS contains additional arguments, like 'extra-buttons."
           (if (zerop (length methods))
               (insert "No methods")
             (dolist (symbol-info methods)
-              (insert-button (format "%s" (upcase (prin1-to-string (cdr (assoc :name symbol-info)))))
+              (insert-button (format "%s" (funcall slime-help-print-case (prin1-to-string (cdr (assoc :name symbol-info)))))
                              'action (lambda (_btn)
                                        (slime-help-symbol (prin1-to-string (cdr (assoc :name symbol-info)))))
                              'follow-link t
@@ -959,7 +965,7 @@ ARGS contains additional arguments, like 'extra-buttons."
     (let* ((system-info (slime-eval `(swank-help:read-emacs-system-info ,cl-system-name)))
            (buffer (get-buffer-create buffer-name)))
       (with-current-buffer buffer
-        (insert (slime-help--heading-1 (upcase cl-system-name)))
+        (insert (slime-help--heading-1 (funcall slime-help-print-case cl-system-name)))
         (newline 2)
         (insert (format slime-help-system-format (length (cdr (assoc :dependencies system-info)))))
         (newline)
