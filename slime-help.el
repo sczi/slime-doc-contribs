@@ -326,6 +326,11 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
     (goto-char 0)
     (pop-to-buffer buffer)))
 
+(defcustom slime-help-package-format "This is a Common Lisp package with %d external symbols"
+  "Format string to use when displaying information about a package."
+  :type 'string
+  :group 'slime-help)
+
 (cl-defun slime-help-package (package-name)
   "Display information about Common Lisp package named PACKAGE-NAME."
   (interactive (list (slime-read-package-name "Describe package: ")))
@@ -341,7 +346,7 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
       (with-current-buffer buffer
         (insert (slime-help--heading-1 (upcase (string-trim package-name))))
         (newline 2)
-        (insert (format "This is a Common Lisp package with %d external symbols" (length (cdr (assoc :external-symbols package-info)))))
+        (insert (format slime-help-package-format (length (cdr (assoc :external-symbols package-info)))))
         (newline 2)
         (when (cdr (assoc :documentation package-info))
           (insert (slime-help--propertize-docstring (cdr (assoc :documentation package-info))))
@@ -394,11 +399,16 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
 
 ;;(slime-help-package "ALEXANDRIA")
 
+(defcustom slime-help-packages-buffer-name "*slime-help: COMMON LISP packages*"
+  "Buffer name to use for `slime-help-packages'."
+  :type 'string
+  :group 'slime-help)
+
 (cl-defun slime-help-packages ()
   "Display information about Common Lisp packages."
   (interactive)
 
-  (let ((buffer-name "*slime-help: COMMON LISP packages*"))
+  (let ((buffer-name slime-help-packages-buffer-name))
     (when (get-buffer buffer-name)
       (pop-to-buffer buffer-name)
       (cl-return-from slime-help-packages))
@@ -421,12 +431,17 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
         (slime-help--open-buffer)
         nil))))
 
+(defcustom slime-help-systems-buffer-name "*slime-help: registered ASDF systems*"
+  "Buffer name to use for `slime-help-systems'."
+  :type 'string
+  :group 'slime-help)
+
 (cl-defun slime-help-systems ()
   "Display information about registered ASDF systems."
 
   (interactive)
 
-  (let ((buffer-name "*slime-help: registered ASDF systems*"))
+  (let ((buffer-name slime-help-systems-buffer-name))
     (when (get-buffer buffer-name)
       (pop-to-buffer buffer-name)
       (cl-return-from slime-help-systems))
@@ -925,6 +940,11 @@ ARGS contains additional arguments, like 'extra-buttons."
     ;; time.
     source))
 
+(defcustom slime-help-system-format "This is a Common Lisp ASDF system with %d dependencies"
+  "Format string to use when displaying information about a system."
+  :type 'string
+  :group 'slime-help)
+
 (cl-defun slime-help-system (cl-system-name)
   "Display documentation about ASDF system named CL-SYSTEM-NAME."
   (interactive (list (slime-read-system-name "Describe system")))
@@ -941,7 +961,7 @@ ARGS contains additional arguments, like 'extra-buttons."
       (with-current-buffer buffer
         (insert (slime-help--heading-1 (upcase cl-system-name)))
         (newline 2)
-        (insert (format "This is a Common Lisp ASDF system with %d dependencies" (length (cdr (assoc :dependencies system-info)))))
+        (insert (format slime-help-system-format (length (cdr (assoc :dependencies system-info)))))
         (newline)
         (if (cdr (assoc :loaded-p system-info))
             (insert (slime-help--info "This system is already loaded."))
