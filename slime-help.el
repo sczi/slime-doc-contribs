@@ -891,9 +891,9 @@ ARGS contains additional arguments, like 'extra-buttons."
           (if (zerop (length methods))
               (insert "No methods")
             (dolist (symbol-info methods)
-              (insert-button (format "%s" (funcall slime-help-print-case (prin1-to-string (cdr (assoc :name symbol-info)))))
+              (insert-button (format "%s" (funcall slime-help-print-case (cdr (assoc :name symbol-info))))
                              'action (lambda (_btn)
-                                       (slime-help-symbol (prin1-to-string (cdr (assoc :name symbol-info)))))
+                                       (slime-help-symbol (prin1-to-string (cdr (assoc :symbol symbol-info)))))
                              'follow-link t
                              'help-echo "Describe symbol")
               (newline)
