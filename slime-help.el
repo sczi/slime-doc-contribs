@@ -321,16 +321,16 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
              (string-prefix-p "*slime-help" (buffer-name buffer)))
            (buffer-list))))
 
-(defun slime-help--open-buffer ()
-  (let ((buffer (current-buffer)))
+(defun slime-help--open-buffer (buffer)
+  (with-current-buffer buffer
     (setq buffer-read-only t)
     (local-set-key "q" 'slime-help--kill-current-buffer)
     (buffer-disable-undo)
     (set (make-local-variable 'kill-buffer-query-functions) nil)
     (slime-mode)
     (slime-help-mode)
-    (goto-char 0)
-    (pop-to-buffer buffer)))
+    (goto-char 0))
+  (pop-to-buffer buffer))
 
 (defcustom slime-help-print-case
   #'upcase
@@ -405,9 +405,8 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
                   (newline 2)
                   (dolist (symbol-info symbol-infos)
                     (format-exported-definition symbol-info))
-                  (newline 2))))))
-        (slime-help--open-buffer)
-        nil))))
+                  (newline 2)))))))
+      (slime-help--open-buffer buffer))))
 
 ;;(slime-help-package "ALEXANDRIA")
 
@@ -439,9 +438,8 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
           (newline)
           (when (cdr (assoc :documentation package-info))
             (insert (slime-oneliner (cdr (assoc :documentation package-info))))
-            (newline)))
-        (slime-help--open-buffer)
-        nil))))
+            (newline))))
+      (slime-help--open-buffer buffer))))
 
 (defcustom slime-help-systems-buffer-name "*slime-help: registered ASDF systems*"
   "Buffer name to use for `slime-help-systems'."
@@ -472,9 +470,8 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
           (newline)
           (when (cdr (assoc :documentation system-info))
             (insert (cdr (assoc :documentation system-info)))
-            (newline)))
-        (slime-help--open-buffer)
-        nil))))
+            (newline))))
+      (slime-help--open-buffer buffer))))
 
 (defun slime-help-function (symbol-name)
   "Display documentation about Common Lisp function bound to SYMBOL-NAME."
@@ -553,10 +550,9 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
                                      (funcall slime-help-ansicl-lookup-function
                                               (prin1-to-string (cdr (assoc :symbol symbol-info)))))
                            'follow-link t
-                           'help-echo "Lookup variable in ANSICL spec"))
+                           'help-echo "Lookup variable in ANSICL spec")))
 
-          (slime-help--open-buffer)
-          nil)))))
+        (slime-help--open-buffer buffer)))))
 
 ;; (slime-help-special-operator "CL:IF")
 
@@ -669,10 +665,9 @@ ARGS contains additional arguments, like 'extra-buttons."
         ;; TODO: add a collapsible extra section with debugging actions, like toggle tracing, toggle profiling, perhaps disassemble too.
 
         (when (cl-getf args 'continuation)
-          (funcall (cl-getf args 'continuation)))
+          (funcall (cl-getf args 'continuation))))
 
-        (slime-help--open-buffer)
-        nil))))
+      (slime-help--open-buffer buffer))))
 
 ;;(slime-help-function "CL:REMOVE")
 ;;(slime-help-function "ALEXANDRIA:FLATTEN")
@@ -768,10 +763,9 @@ ARGS contains additional arguments, like 'extra-buttons."
                                    (funcall slime-help-ansicl-lookup-function
                                             (prin1-to-string (cdr (assoc :symbol symbol-info)))))
                          'follow-link t
-                         'help-echo "Lookup variable in ANSICL spec"))
+                         'help-echo "Lookup variable in ANSICL spec")))
 
-        (slime-help--open-buffer)
-        nil))))
+      (slime-help--open-buffer buffer))))
 
 ;; (slime-help-variable "*STANDARD-OUTPUT*")
 
@@ -908,16 +902,14 @@ ARGS contains additional arguments, like 'extra-buttons."
                 (insert "Not documented"))
               (newline)
               (insert (slime-help--horizontal-line))
-              (newline))))
+              (newline)))))
 
         ;; Outlines configuration
         ;;(setq outline-regexp "Methods")
         ;;(outline-minor-mode)
         ;;(outline-hide-body)
 
-        (slime-help--open-buffer)
-
-        nil))))
+      (slime-help--open-buffer buffer))))
 
 ;;(slime-help-class "HUNCHENTOOT:ACCEPTOR")
 
@@ -1029,10 +1021,9 @@ ARGS contains additional arguments, like 'extra-buttons."
                                      (slime-help-package package-name))
                            'follow-link t
                            'help-echo "Describe package")
-            (insert " ")))
+            (insert " "))))
 
-        (slime-help--open-buffer)
-        nil))))
+      (slime-help--open-buffer buffer))))
 
 ;;(slime-help-system "alexandria")
 
