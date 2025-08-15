@@ -282,10 +282,14 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
   (interactive (list (slime-read-symbol-name "Describe symbol: ")))
   (when (not symbol-name)
     (error "No symbol given"))
-  (let ((symbol-infos (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name))))))
+  (let ((symbol-infos (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name)))))
+        (orig-buffer (current-buffer)))
     (unless symbol-infos
       (message "No help found for %s" symbol-name))
-    (dolist (symbol-info symbol-infos)
+    (dolist (symbol-info symbol-infos
+                         (if (eq orig-buffer (current-buffer))
+                             nil
+                           (current-buffer)))
       (cl-case (cdr (assoc :type symbol-info))
         (:function (slime-help-function symbol-name))
         (:generic-function (slime-help-generic-function symbol-name))
