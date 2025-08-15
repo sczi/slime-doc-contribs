@@ -283,6 +283,8 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
   (when (not symbol-name)
     (error "No symbol given"))
   (let ((symbol-infos (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name))))))
+    (unless symbol-infos
+      (message "No help found for %s" symbol-name))
     (dolist (symbol-info symbol-infos)
       (cl-case (cdr (assoc :type symbol-info))
         (:function (slime-help-function symbol-name))
