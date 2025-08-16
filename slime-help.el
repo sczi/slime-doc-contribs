@@ -6,7 +6,7 @@
 ;; URL: https://github.com/mmontone/slime-doc-contribs
 ;; Keywords: help, lisp, slime, common-lisp
 ;; Version: 0.1
-;; Package-Requires: ((emacs "25"))
+;; Package-Requires: ((emacs "25.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -321,9 +321,17 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
              (string-prefix-p "*slime-help" (buffer-name buffer)))
            (buffer-list))))
 
+(defvar-local slime-help--imenu-index nil
+  "A list of entries within each slime-help page for use by imenu.")
+
+(defun slime-help--imenu-index-function ()
+  "Return imenu index for help buffer."
+  slime-help--imenu-index)
+
 (defun slime-help--open-buffer (buffer)
   (with-current-buffer buffer
-    (setq buffer-read-only t)
+    (setq buffer-read-only t
+          imenu-create-index-function #'slime-help--imenu-index-function)
     (local-set-key "q" 'slime-help--kill-current-buffer)
     (buffer-disable-undo)
     (set (make-local-variable 'kill-buffer-query-functions) nil)
@@ -395,17 +403,23 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
                              ("Classes" . :class)
                              ("Macros" . :macro)
                              ("Functions" . :function)
-                             ("Generic functions" . :generic-function))))
+                             ("Generic functions" . :generic-function)))
+                imenu-index)
             (dolist (def-type def-types)
               (let ((symbol-infos (cl-remove-if-not (lambda (x)
                                                       (cl-equalp (cdr (assoc :type x)) (cdr def-type)))
-                                                    (cdr (assoc :external-symbols package-info)))))
+                                                    (cdr (assoc :external-symbols package-info))))
+                    imenu-submenu)
                 (when symbol-infos
+                  (push (car def-type) imenu-submenu)
                   (insert (slime-help--heading-3 (car def-type)))
                   (newline 2)
                   (dolist (symbol-info symbol-infos)
+                    (push (cons (alist-get :name symbol-info) (point)) imenu-submenu)
                     (format-exported-definition symbol-info))
-                  (newline 2)))))))
+                  (newline 2)
+                  (push (nreverse imenu-submenu) imenu-index))))
+            (setq slime-help--imenu-index (nreverse imenu-index)))))
       (slime-help--open-buffer buffer))))
 
 ;;(slime-help-package "ALEXANDRIA")
@@ -425,10 +439,12 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
       (cl-return-from slime-help-packages))
 
     (let* ((packages-info (slime-eval `(swank-help:read-emacs-packages-info)))
-           (buffer (get-buffer-create buffer-name)))
+           (buffer (get-buffer-create buffer-name))
+           imenu-index)
       (with-current-buffer buffer
         (dolist (package-info packages-info)
           (let ((package-name (cdr (assoc :name package-info))))
+            (push (cons package-name (point)) imenu-index)
             (insert-button package-name
                            'action (lambda (btn)
                                      (ignore btn)
@@ -438,7 +454,8 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
           (newline)
           (when (cdr (assoc :documentation package-info))
             (insert (slime-oneliner (cdr (assoc :documentation package-info))))
-            (newline))))
+            (newline)))
+        (setq slime-help--imenu-index (nreverse imenu-index)))
       (slime-help--open-buffer buffer))))
 
 (defcustom slime-help-systems-buffer-name "*slime-help: registered ASDF systems*"
@@ -457,10 +474,12 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
       (cl-return-from slime-help-systems))
 
     (let* ((systems-info (slime-eval `(swank-help:read-emacs-systems-info)))
-           (buffer (get-buffer-create buffer-name)))
+           (buffer (get-buffer-create buffer-name))
+           imenu-index)
       (with-current-buffer buffer
         (dolist (system-info systems-info)
           (let ((cl-system-name (cdr (assoc :name system-info))))
+            (push (cons cl-system-name (point)) imenu-index)
             (insert-button cl-system-name
                            'action (lambda (btn)
                                      (ignore btn)
@@ -470,7 +489,8 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
           (newline)
           (when (cdr (assoc :documentation system-info))
             (insert (cdr (assoc :documentation system-info)))
-            (newline))))
+            (newline)))
+        (setq slime-help--imenu-index (nreverse imenu-index)))
       (slime-help--open-buffer buffer))))
 
 (defun slime-help-function (symbol-name)
@@ -782,7 +802,8 @@ ARGS contains additional arguments, like 'extra-buttons."
 
     (let* ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name)) :class)))
            (package-name (cdr (assoc :package symbol-info)))
-           (buffer (get-buffer-create buffer-name)))
+           (buffer (get-buffer-create buffer-name))
+           imenu-index)
       (when (null symbol-info)
         (error "Could not read class info"))
       (with-current-buffer buffer
@@ -866,21 +887,25 @@ ARGS contains additional arguments, like 'extra-buttons."
             (newline 2)))
 
         ;; TODO: show more information about slots
-        (let ((slots (cdr (assoc :slots symbol-info))))
+        (let ((slots (cdr (assoc :slots symbol-info)))
+              (imenu-submenu (list "Slots")))
           (insert (slime-help--heading-2 "Slots"))
           (newline 2)
           (if (zerop (length slots))
               (progn (insert "No slots") (newline))
             (dolist (slot slots)
+              (push (cons (alist-get :name slot) (point)) imenu-submenu)
               (insert (propertize (format "- %s" (cdr (assoc :name slot))) 'face 'bold))
               (newline)
               (when (cdr (assoc :documentation slot))
                 (slime-help--insert-documentation slot (cdr (assoc :package symbol-info)))
-                (newline))))
+                (newline)))
+            (push (nreverse imenu-submenu) imenu-index))
           (newline))
 
         (let ((methods-start (point))
-              (methods (cdr (assoc :methods symbol-info))))
+              (methods (cdr (assoc :methods symbol-info)))
+              (imenu-submenu (list "Methods")))
           (insert (slime-help--heading-2 "Methods"))
           (make-text-button methods-start (point)
                             'action (lambda (_btn)
@@ -891,6 +916,7 @@ ARGS contains additional arguments, like 'extra-buttons."
           (if (zerop (length methods))
               (insert "No methods")
             (dolist (symbol-info methods)
+              (push (cons (alist-get :name symbol-info) (point)) imenu-submenu)
               (insert-button (format "%s" (funcall slime-help-print-case (cdr (assoc :name symbol-info))))
                              'action (lambda (_btn)
                                        (slime-help-symbol (prin1-to-string (cdr (assoc :symbol symbol-info)))))
@@ -902,7 +928,9 @@ ARGS contains additional arguments, like 'extra-buttons."
                 (insert "Not documented"))
               (newline)
               (insert (slime-help--horizontal-line))
-              (newline)))))
+              (newline))
+            (push (nreverse imenu-submenu) imenu-index)))
+        (setq slime-help--imenu-index (nreverse imenu-index)))
 
         ;; Outlines configuration
         ;;(setq outline-regexp "Methods")
