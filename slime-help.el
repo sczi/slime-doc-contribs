@@ -896,6 +896,16 @@ ARGS contains additional arguments, like 'extra-buttons."
                         (dolist (slot slots)
                           (push (cons (alist-get :name slot) (point)) imenu-submenu)
                           (insert (propertize (format "- %s" (cdr (assoc :name slot))) 'face 'bold))
+                          (when-let ((defined-in (alist-get :defined-in slot))
+                                     (name (alist-get :name defined-in)))
+                            (insert " ")
+                            (insert (make-string (- 80 (length name) 1 (current-column)) ?.)
+                                    " ")
+                            (insert-button name
+                               'action (lambda (_btn)
+                                         (slime-help-symbol (prin1-to-string
+                                                             (alist-get :symbol defined-in))))
+                               'help-echo "Describe class"))
                           (newline)
                           (when (cdr (assoc :documentation slot))
                             (slime-help--insert-documentation slot (cdr (assoc :package symbol-info)))
@@ -924,6 +934,13 @@ ARGS contains additional arguments, like 'extra-buttons."
                                        (slime-help-symbol (prin1-to-string (cdr (assoc :symbol symbol-info)))))
                              'follow-link t
                              'help-echo "Describe symbol")
+              (when-let ((defined-in (alist-get :defined-in symbol-info))
+                         (name (alist-get :name defined-in)))
+                (insert (make-string (- 80 (length name) (current-column)) ?\s))
+                (insert-button name
+                               'action (lambda (_btn)
+                                         (slime-help-symbol (prin1-to-string (alist-get :symbol defined-in))))
+                               'help-echo "Describe class"))
               (newline)
               (if (cdr (assoc :documentation symbol-info))
                   (insert (slime-help--first-line (cdr (assoc :documentation symbol-info))))
