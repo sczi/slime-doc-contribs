@@ -303,10 +303,18 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
 ;;(slime-help-symbol "ALEXANDRIA:FLATTEN")
 ;;(slime-help-symbol "ALEXANDRIA:WITH-GENSYMS")
 
+(defcustom slime-help-verbose nil
+  "When enabled, show full docstrings and method arguments."
+  :type 'boolean
+  :group 'slime-help)
+
 (defun slime-help--first-line (string)
-  "Return the first line of the `STRING'."
-  (let ((pos (cl-position ?\n string)))
-    (if (null pos) string (cl-subseq string 0 pos))))
+  "Return the first line of the `STRING'.
+Or return the whole string when `slime-help-verbose' is enabled."
+  (if slime-help-verbose
+      string
+    (let ((pos (cl-position ?\n string)))
+      (if (null pos) string (cl-subseq string 0 pos)))))
 
 (defun slime-help--kill-current-buffer ()
   (interactive)
@@ -934,8 +942,14 @@ ARGS contains additional arguments, like 'extra-buttons."
                                        (slime-help-symbol (prin1-to-string (cdr (assoc :symbol symbol-info)))))
                              'follow-link t
                              'help-echo "Describe symbol")
+              (when slime-help-verbose
+                (when-let (args (alist-get :args symbol-info))
+                  (insert args)))
               (when-let ((defined-in (alist-get :defined-in symbol-info))
                          (name (alist-get :name defined-in)))
+                (when (> (+ (length name) (current-column)) 80)
+                  (let ((fill-column (- fill-column (length name))))
+                    (do-auto-fill)))
                 (insert (make-string (- 80 (length name) (current-column)) ?\s))
                 (insert-button name
                                'action (lambda (_btn)
